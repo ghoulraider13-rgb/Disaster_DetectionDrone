@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Datasets (downloaded via Roboflow, not committed)
+datasets/
+
+# Training runs and weights (large binaries — release them instead)
+runs/
+weights/*.pt
+!weights/.gitkeep
+yolo*.pt
+
+# Exports
+*.onnx
+*.engine
+*.xml
+*.bin
+
+# Ultralytics
+*.torchscript
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Experimentation
+sandbox/

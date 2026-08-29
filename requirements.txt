@@ -1,0 +1,11 @@
+# Disaster Detection Drone — core dependencies
+# Python >= 3.10
+
+# Detection model training/inference framework (YOLOv11)
+ultralytics>=8.3.0
+
+# Dataset hosting: downloads the pinned disaster datasets
+roboflow>=1.1.0
+
+# Config parsing for configs/datasets.yaml
+pyyaml>=6.0

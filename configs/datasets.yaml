@@ -1,0 +1,37 @@
+# Pinned Roboflow datasets for the Disaster Detection Drone project.
+# Bump the `version` fields when new dataset versions are published on Roboflow;
+# training runs are only reproducible against pinned versions.
+#
+# Every entry under `train` is forwarded to ultralytics YOLO.train() and
+# merged over the defaults in drone_detect/train.py (seed=42, patience=20,
+# cos_lr=True, batch=-1 auto-batching).
+
+workspace: ashwins-workspace-zz9gf
+
+datasets:
+  - name: flood
+    project: ai-disaster-survival-drone
+    version: 2
+    run_name: flood_model
+    description: Flood extent and survivor detection (Hurricane Harvey aerial imagery)
+    train:
+      epochs: 50
+      imgsz: 640
+
+  - name: landslide
+    project: ai-disaster-drone-landslide
+    version: 1
+    run_name: landslide_model
+    description: Landslide and slope-failure detection from UAV imagery
+    train:
+      epochs: 50
+      imgsz: 640
+
+  - name: earthquake
+    project: ai-disaster-drone-earthquakes
+    version: 1
+    run_name: earthquake_model
+    description: Earthquake rubble and structural damage assessment
+    train:
+      epochs: 50
+      imgsz: 640
