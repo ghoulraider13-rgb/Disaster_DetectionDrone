@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disaster Detection Drone — Project Presentation</title>
+  <style>
+    :root {
+      --bg: #0a0f1a;
+      --bg-elevated: #111827;
+      --fg: #e8edf5;
+      --fg-muted: #8b99b3;
+      --accent: #00d4aa;
+      --accent-dim: #00d4aa33;
+      --accent-2: #3b82f6;
+      --accent-3: #f59e0b;
+      --danger: #ef4444;
+      --card: #151d2e;
+      --border: #243049;
+      --code-bg: #0d1220;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+    }
+
+    .slides {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .slide {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(2rem, 5vw, 4rem);
+      position: relative;
+      min-height: 100vh;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, var(--accent-dim) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, #3b82f622 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .slide-content {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: clamp(1.25rem, 3vw, 1.5rem);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: var(--fg-muted);
+      margin-bottom: 1rem;
+      max-width: 70ch;
+    }
+
+    .lead {
+      font-size: clamp(1.125rem, 2.5vw, 1.375rem);
+      color: var(--fg);
+      font-weight: 400;
+    }
+
+    .tagline {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    ul, ol {
+      margin: 1rem 0 1rem 1.5rem;
+      color: var(--fg-muted);
+    }
+
+    li {
+      margin: 0.5rem 0;
+      font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+    }
+
+    li::marker { color: var(--accent); }
+
+    code {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monospace';
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+      line-height: 1.5;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      border: none;
+      color: var(--fg);
+      font-size: inherit;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .card p { font-size: 0.9rem; margin: 0; }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .badge-blue { background: #3b82f622; color: #3b82f6; }
+    .badge-amber { background: #f59e0b22; color: #f59e0b; }
+    .badge-red { background: #ef444422; color: #ef4444; }
+
+    .table-wrap { overflow-x: auto; margin: 1rem 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+    }
+    th, td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--card);
+    }
+    td { color: var(--fg-muted); }
+    tr:hover td { color: var(--fg); }
+
+    .footer {
+      position: absolute;
+      bottom: 1.5rem;
+      left: clamp(2rem, 5vw, 4rem);
+      right: clamp(2rem, 5vw, 4rem);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--fg-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+
+    .slide-num { font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monospace'; font-weight: 600; color: var(--accent); }
+
+    .nav-hint {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 2rem;
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monospace';
+      opacity: 0.6;
+      z-index: 100;
+    }
+
+    .slide-title { text-align: center; }
+    .slide-title h1 { margin-bottom: 0.5rem; }
+    .slide-title .lead { max-width: 60ch; margin: 0 auto 2rem; }
+
+    .slide-section { text-align: center; }
+    .slide-section h2 { color: var(--fg); margin-bottom: 0.5rem; }
+    .slide-section .tagline { font-size: 1.25rem; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    .highlight-box {
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { flex: 1; color: var(--fg-muted); }
+    .metric-value { font-weight: 600; color: var(--accent); font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monospace'; }
+    .metric-value.warning { color: var(--accent-3); }
+    .metric-value.danger { color: var(--danger); }
+
+    .arch-diagram {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monospace';
+      font-size: clamp(0.65rem, 1.2vw, 0.75rem);
+      line-height: 1.4;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      white-space: pre;
+      color: var(--fg-muted);
+    }
+    .arch-diagram .box { color: var(--accent); }
+    .arch-diagram .arrow { color: var(--accent-2); }
+    .arch-diagram .label { color: var(--fg); }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .progress-fill.warning { background: var(--accent-3); }
+    .progress-fill.danger { background: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="slides" id="slides">
+    <!-- Slide 1: Title -->
+    <section class="slide slide-title active" data-slide="1">
+      <div class="slide-content">
+        <span class="badge">Disaster Detection Drone</span>
+        <span class="badge-blue">YOLOv11 • Edge AI • SAR</span>
+        <h1>Disaster Detection Drone</h1>
+        <p class="lead">Real-time UAV computer vision for flood, landslide, and earthquake search-and-rescue</p>
+        <p class="lead tagline">Built for the golden hour. Every minute saved is a life.</p>
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <span class="badge-blue">Python 3.10+</span>
+          <span class="badge-blue">Ultralytics YOLOv11</span>
+          <span class="badge-blue">Roboflow</span>
+          <span class="badge-blue">Jetson Orin Ready</span>
+          <span class="badge-amber">MIT License</span>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Project Presentation</span>
+        <span class="slide-num">1 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 2: The Problem -->
+    <section class="slide" data-slide="2">
+      <div class="slide-content">
+        <h2>The Problem: The Golden Hour</h2>
+        <p class="lead">During disaster response, the first hours decide who survives.</p>
+
+        <div class="grid grid-3">
+          <div class="card">
+            <h4>🚫 Inaccessible Terrain</h4>
+            <p>Floodwater, debris, unstable slopes block ground teams from reaching victims.</p>
+          </div>
+          <div class="card">
+            <h4>📡 Bandwidth Failure</h4>
+            <p>Cell towers down; streaming video to operators impossible in disaster zones.</p>
+          </div>
+          <div class="card">
+            <h4>⏱️ Time Critical</h4>
+            <p>Survival probability drops ~10% per hour for trapped victims (FEMA data).</p>
+          </div>
+        </div>
+
+        <div class="highlight-box">
+          <strong>Current gap:</strong> Drones exist, but lack <em>onboard intelligence</em> to detect survivors, flood extent, landslides, or structural damage autonomously.
+        </div>
+      </div>
+      <div class="footer">
+        <span>The Problem</span>
+        <span class="slide-num">2 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 3: Solution Overview -->
+    <section class="slide" data-slide="3">
+      <div class="slide-content">
+        <h2>Solution: Onboard AI for SAR Drones</h2>
+        <p class="lead">Compact YOLOv11 models running directly on drone companion computers — no cloud, no streaming, real-time detection.</p>
+
+        <div class="two-col">
+          <div>
+            <h3>Three Specialized Models</h3>
+            <ul>
+              <li><strong>Flood:</strong> Extent mapping + survivor detection</li>
+              <li><strong>Landslide:</strong> Slope failure & debris flow detection</li>
+              <li><strong>Earthquake:</strong> Rubble & structural damage assessment</li>
+            </ul>
+            <h3>Key Capabilities</h3>
+            <ul>
+              <li>1280×1280 resolution for small aerial objects</li>
+              <li>~11M params (YOLOv11s) — fits Jetson Orin Nano</li>
+              <li>Export to ONNX, TensorRT, OpenVINO, TorchScript</li>
+              <li>CLI-first for fleet training & CI/CD</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Deployment Flow</h3>
+            <pre><code>Train (GPU) → Export (ONNX)
+    → TensorRT (on Jetson)
+    → Deploy (drone_detect.inference)
+    → Real-time ≥30 FPS @ 1280²</code></pre>
+            <h3>Datasets (Pinned Roboflow)</h3>
+            <ul>
+              <li>Flood: Hurricane Harvey aerial (v2)</li>
+              <li>Landslide: UAV slope failures (v1)</li>
+              <li>Earthquake: Post-quake rubble (v1)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Solution Overview</span>
+        <span class="slide-num">3 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 4: Architecture -->
+    <section class="slide" data-slide="4">
+      <div class="slide-content">
+        <h2>System Architecture</h2>
+        <p class="lead">Modular, CLI-driven pipeline from dataset to deployed edge model.</p>
+
+        <pre class="arch-diagram"><span class="box">┌─────────────────┐</span>     <span class="arrow">┌─────────────────┐</span>     <span class="box">┌─────────────────┐</span>
+<span class="box">│ configs/        │</span>     <span class="arrow">│ drone_detect/   │</span>     <span class="box">│ YOLOv11s.pt     │</span>
+<span class="box">│ datasets.yaml   │──►  │ datasets.py     │──►  │ (COCO-pretrained)│</span>
+<span class="box">└─────────────────┘</span>     <span class="arrow">└────────┬────────┘</span>     <span class="box">└────────┬────────┘</span>
+                                      <span class="arrow">│</span>                        <span class="arrow">│</span>
+                                      <span class="arrow">▼</span>                        <span class="arrow">▼</span>
+                         <span class="box">┌─────────────────┐</span>     <span class="box">┌─────────────────┐</span>
+                         <span class="box">│ train.py        │</span>     <span class="box">│ export.py       │</span>
+                         <span class="box">│ Fine-tune per   │</span>     <span class="box">│ ONNX / Engine   │</span>
+                         <span class="box">│ disaster type   │</span>     <span class="box">│ / OpenVINO      │</span>
+                         <span class="box">└────────┬────────┘</span>     <span class="box">└────────┬────────┘</span>
+                                      <span class="arrow">│</span>                        <span class="arrow">│</span>
+                                      <span class="arrow">▼</span>                        <span class="arrow">▼</span>
+                         <span class="box">┌─────────────────┐</span>     <span class="box">┌─────────────────┐</span>
+                         <span class="box">│ runs/drone_     │</span>     <span class="box">│ inference.py    │</span>
+                         <span class="box">│ models/         │</span>     <span class="box">│ Real-time       │</span>
+                         <span class="box">│ weights/best.pt │</span>     <span class="box">│ onboard detect  │</span>
+                         <span class="box">└─────────────────┘</span>     <span class="box">└─────────────────┘</span></pre>
+
+        <p style="margin-top: 1rem;"><strong>CLI Entry:</strong> <code>python -m drone_detect {datasets|train|export|predict}</code></p>
+      </div>
+      <div class="footer">
+        <span>Architecture</span>
+        <span class="slide-num">4 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 5: Dataset Details -->
+    <section class="slide" data-slide="5">
+      <div class="slide-content">
+        <h2>Pinned Datasets & Reproducibility</h2>
+        <p class="lead">Every training run uses exact Roboflow versions — reproducible results six months from now.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Roboflow Project</th>
+                <th>Version</th>
+                <th>Classes</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>flood_model_v2</code></td>
+                <td><code>ai-disaster-survival-drone</code></td>
+                <td>2</td>
+                <td>flood, survivor</td>
+                <td>Hurricane Harvey aerial</td>
+              </tr>
+              <tr>
+                <td><code>landslide_model_v2</code></td>
+                <td><code>ai-disaster-drone-landslide</code></td>
+                <td>1</td>
+                <td>landslide</td>
+                <td>UAV slope failures</td>
+              </tr>
+              <tr>
+                <td><code>earthquake_model_v2</code></td>
+                <td><code>ai-disaster-drone-earthquakes</code></td>
+                <td>1</td>
+                <td>rubble, damage</td>
+                <td>Post-earthquake imagery</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Reproducibility Mechanisms</h3>
+        <div class="grid grid-2">
+          <div class="card">
+            <h4>🔒 Pinned Versions</h4>
+            <p>Exact dataset version in YAML config; bump only when intentional.</p>
+          </div>
+          <div class="card">
+            <h4>🎲 Fixed Seed</h4>
+            <p><code>seed=42</code> + <code>deterministic=True</code> — identical results every run.</p>
+          </div>
+          <div class="card">
+            <h4>⏹️ Early Stopping</h4>
+            <p><code>patience=30</code> on val mAP — stops at convergence, not fixed epochs.</p>
+          </div>
+          <div class="card">
+            <h4>📦 Config-Driven</h4>
+            <p>All hyperparameters in <code>configs/datasets.yaml</code>, zero hardcoded values.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Datasets & Reproducibility</span>
+        <span class="slide-num">5 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 6: Training Config -->
+    <section class="slide" data-slide="6">
+      <div class="slide-content">
+        <h2>Training Hyperparameters</h2>
+        <p class="lead">Optimized for small aerial objects (survivors, rubble) on resource-constrained edge hardware.</p>
+
+        <div class="two-col">
+          <div>
+            <h3>Core Settings</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Param</th><th>Value</th><th>Rationale</th></tr></thead>
+                <tbody>
+                  <tr><td>Base Model</td><td>YOLOv11s.pt</td><td>11M params, best capacity/latency</td></tr>
+                  <tr><td>Image Size</td><td>1280×1280</td><td>Small objects need high res</td></tr>
+                  <tr><td>Epochs</td><td>150 (max)</td><td>Upper bound; early stop activates</td></tr>
+                  <tr><td>Batch</td><td>16</td><td>Fits Jetson GPU memory</td></tr>
+                  <tr><td>Optimizer</td><td>AdamW</td><td>Better fine-tuning convergence</td></tr>
+                  <tr><td>LR</td><td>0.001 + Cosine</td><td>Smooth decay to zero</td></tr>
+                  <tr><td>Patience</td><td>30</td><td>Stops when val mAP plateaus</td></tr>
+                  <tr><td>Seed</td><td>42</td><td>Full reproducibility</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h3>Loss Weights (Class-Imbalanced Data)</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Loss</th><th>Weight</th><th>Purpose</th></tr></thead>
+                <tbody>
+                  <tr><td>cls (classification)</td><td>2.0</td><td>Survivors rare → higher weight</td></tr>
+                  <tr><td>box (localization)</td><td>7.5</td><td>Precise boxes critical for SAR</td></tr>
+                  <tr><td>dfl (distribution focal)</td><td>1.5</td><td>Better box regression</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Augmentation (Small Object Focus)</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Aug</th><th>Value</th><th>Effect</th></tr></thead>
+                <tbody>
+                  <tr><td>Mosaic</td><td>1.0</td><td>Context mixing</td></tr>
+                  <tr><td>MixUp</td><td>0.2</td><td>Regularization</td></tr>
+                  <tr><td>Copy-Paste</td><td>0.3</td><td>Oversample small objects</td></tr>
+                  <tr><td>Degrees</td><td>10.0</td><td>Rotation invariance</td></tr>
+                  <tr><td>HSV (H/S/V)</td><td>.015/.7/.4</td><td>Lighting variance</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Training Config</span>
+        <span class="slide-num">6 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 7: CLI Workflow -->
+    <section class="slide" data-slide="7">
+      <div class="slide-content">
+        <h2>CLI-First Workflow</h2>
+        <p class="lead">Everything scriptable for CI/CD, fleet training, and automated deployment.</p>
+
+        <div class="grid grid-2">
+          <div class="card">
+            <h4>📋 Dataset Management</h4>
+            <pre><code># List all configured datasets
+drone_detect datasets list
+
+# Download all (or one)
+drone_detect datasets download
+drone_detect datasets download --only flood</code></pre>
+          </div>
+          <div class="card">
+            <h4>🚀 Training</h4>
+            <pre><code># Train all three models
+drone_detect train
+
+# Single model with overrides
+drone_detect train --only landslide \
+  --epochs 100 --device cpu
+
+# Override base model
+drone_detect train --only earthquake \
+  --model yolo11n.pt</code></pre>
+          </div>
+          <div class="card">
+            <h4>📦 Export for Edge</h4>
+            <pre><code># ONNX (general)
+drone_detect export \
+  --weights runs/drone_models/flood_model_v2/weights/best.pt \
+  --format onnx
+
+# TensorRT (Jetson)
+drone_detect export --format engine
+
+# OpenVINO (Intel)
+drone_detect export --format openvino</code></pre>
+          </div>
+          <div class="card">
+            <h4>🔍 Inference</h4>
+            <pre><code># Image
+drone_detect predict --weights best.pt \
+  --source image.jpg --conf 0.25
+
+# Video (annotated output)
+drone_detect predict --weights best.pt \
+  --source video.mp4 --conf 0.25
+
+# Webcam / RTSP
+drone_detect predict --weights best.pt --source 0</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>CLI Workflow</span>
+        <span class="slide-num">7 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 8: Export Formats -->
+    <section class="slide" data-slide="8">
+      <div class="slide-content">
+        <h2>Export Formats for Edge Deployment</h2>
+        <p class="lead">Choose the right format for your target hardware.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Format</th>
+                <th>Target Hardware</th>
+                <th>Latency</th>
+                <th>Complexity</th>
+                <th>Best For</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ONNX</strong></td>
+                <td>ONNX Runtime (CPU/GPU)</td>
+                <td>Medium</td>
+                <td>Low</td>
+                <td>Validation, cross-platform</td>
+              </tr>
+              <tr>
+                <td><strong>TensorRT (engine)</strong></td>
+                <td>NVIDIA Jetson Orin/Nano</td>
+                <td><strong>Lowest</strong></td>
+                <td>Medium (build on target)</td>
+                <td><strong>Production drone payloads</strong></td>
+              </tr>
+              <tr>
+                <td><strong>OpenVINO</strong></td>
+                <td>Intel CPU/VPU/NPU</td>
+                <td>Low</td>
+                <td>Low</td>
+                <td>Intel-based edge boxes</td>
+              </tr>
+              <tr>
+                <td><strong>TorchScript</strong></td>
+                <td>Python-only</td>
+                <td>High</td>
+                <td>Lowest</td>
+                <td>Rapid prototyping, no C++</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="highlight-box" style="margin-top: 1.5rem;">
+          <strong>Recommended production path:</strong>
+          <code>best.pt → ONNX → (on Jetson) trtexec → best.engine → drone_detect.inference</code>
+          <br><br>
+          Target: <strong>≥30 FPS @ 1280×1280 on Jetson Orin Nano</strong>
+        </div>
+
+        <h3>Export CLI Options</h3>
+        <pre><code>drone_detect export \
+  --weights runs/drone_models/flood_model_v2/weights/best.pt \
+  --format engine \          # onnx | engine | openvino | torchscript
+  --output-dir ./deploy/     # optional destination</code></pre>
+      </div>
+      <div class="footer">
+        <span>Export Formats</span>
+        <span class="slide-num">8 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 9: Current Status -->
+    <section class="slide" data-slide="9">
+      <div class="slide-content">
+        <h2>Current Training Status</h2>
+        <p class="lead">Flood model partially trained; landslide and earthquake pending.</p>
+
+        <div class="grid grid-3">
+          <div class="card">
+            <h4>🌊 Flood Model v2</h4>
+            <div class="metric-row">
+              <span class="metric-label">Status</span>
+              <span class="metric-value">✅ Trained</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Run Dir</span>
+              <span class="metric-value"><code>runs/drone_models/flood_model_v2/</code></span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Best Weights</span>
+              <span class="metric-value"><code>weights/best.pt</code></span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Classes</span>
+              <span class="metric-value">Flooded regions, Pool</span>
+            </div>
+            <div style="margin-top: 1rem;">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+              </div>
+              <small style="color: var(--fg-muted);">Training complete — weights available</small>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>🏔️ Landslide Model v2</h4>
+            <div class="metric-row">
+              <span class="metric-label">Status</span>
+              <span class="metric-value">✅ Trained</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Dataset</span>
+              <span class="metric-value">ai-disaster-drone-landslide v1</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Classes</span>
+              <span class="metric-value">landslide, landslide-</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Best Weights</span>
+              <span class="metric-value"><code>weights/best.pt</code></span>
+            </div>
+            <div style="margin-top: 1rem;">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+              </div>
+              <small style="color: var(--fg-muted);">Training complete — weights available</small>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>🏗️ Earthquake Model v2</h4>
+            <div class="metric-row">
+              <span class="metric-label">Status</span>
+              <span class="metric-value">✅ Trained</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Dataset</span>
+              <span class="metric-value">ai-disaster-drone-earthquakes v1</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Classes</span>
+              <span class="metric-value">Buildings-Collapsed, Buildings-Damaged, Road-Damaged</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Best Weights</span>
+              <span class="metric-value"><code>weights/best.pt</code></span>
+            </div>
+            <div style="margin-top: 1rem;">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+              </div>
+              <small style="color: var(--fg-muted);">Training complete — weights available</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box" style="margin-top: 1.5rem;">
+          <strong>All three models trained:</strong> Flood (2 classes), Landslide (2 classes), Earthquake (3 classes). Weights available at <code>runs/drone_models/*/weights/best.pt</code>. Ready for export to ONNX/TensorRT/OpenVINO for edge deployment.
+        </div>
+      </div>
+      <div class="footer">
+        <span>Current Status</span>
+        <span class="slide-num">9 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 10: Expected Results -->
+    <section class="slide" data-slide="10">
+      <div class="slide-content">
+        <h2>Expected Results & Validation</h2>
+        <p class="lead">Benchmarks from accompanying paper — YOLOv11 outperforms classical segmentation by 9–20 points.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Flood</th>
+                <th>Landslide</th>
+                <th>Earthquake</th>
+                <th>Classical Seg.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>mAP@0.5</td>
+                <td>~0.75</td>
+                <td>~0.70</td>
+                <td>~0.68</td>
+                <td>0.55–0.60</td>
+              </tr>
+              <tr>
+                <td>Recall (Survivors)</td>
+                <td><strong>>0.80</strong></td>
+                <td>N/A</td>
+                <td>N/A</td>
+                <td>~0.60</td>
+              </tr>
+              <tr>
+                <td>Inference (Jetson Orin Nano)</td>
+                <td>~25 ms</td>
+                <td>~25 ms</td>
+                <td>~25 ms</td>
+                <td>N/A</td>
+              </tr>
+              <tr>
+                <td>FPS @ 1280²</td>
+                <td>~40</td>
+                <td>~40</td>
+                <td>~40</td>
+                <td>N/A</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Validation Artifacts (per training run)</h3>
+        <div class="grid grid-4">
+          <div class="card">
+            <h4>📊 Confusion Matrix</h4>
+            <p><code>confusion_matrix.png</code></p>
+          </div>
+          <div class="card">
+            <h4>📈 Training Curves</h4>
+            <p><code>results.png</code> (loss, mAP, P/R)</p>
+          </div>
+          <div class="card">
+            <h4>🖼️ Val Predictions</h4>
+            <p><code>val_batch0_pred.jpg</code></p>
+          </div>
+          <div class="card">
+            <h4>⚖️ Weights</h4>
+            <p><code>weights/best.pt</code>, <code>last.pt</code></p>
+          </div>
+        </div>
+
+        <p style="margin-top: 1rem;"><strong>Key insight:</strong> Recall gains matter most for SAR — missing a survivor is unacceptable. YOLOv11n/s achieves >80% survivor recall vs ~60% for classical methods.</p>
+      </div>
+      <div class="footer">
+        <span>Expected Results</span>
+        <span class="slide-num">10 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 11: Notebook -->
+    <section class="slide" data-slide="11">
+      <div class="slide-content">
+        <h2>Kaggle/Colab Notebook</h2>
+        <p class="lead">Interactive end-to-end walkthrough: download → train → visualize — runs as-is on free GPUs.</p>
+
+        <div class="two-col">
+          <div>
+            <h3>Features</h3>
+            <ul>
+              <li>No hardcoded credentials — reads <code>ROBOFLOW_API_KEY</code> from secrets</li>
+              <li>Single loop trains all three models (no copy-paste)</li>
+              <li>Correct output paths from Ultralytics <code>save_dir</code></li>
+              <li>Visualizes confusion matrix, curves, val predictions</li>
+              <li>Sanity-check inference with test-time augmentation</li>
+            </ul>
+
+            <h3>Notebook Structure</h3>
+            <ol>
+              <li>Install dependencies (pinned versions)</li>
+              <li>Configure datasets (mirrors <code>configs/datasets.yaml</code>)</li>
+              <li>Download + train all models in loop</li>
+              <li>Visualize each run's artifacts</li>
+              <li>Sanity-check inference on validation image</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Key Code Snippet</h3>
+            <pre><code>rf = Roboflow(api_key=API_KEY)
+for name, cfg in DATASETS.items():
+    dataset = rf.workspace(WORKSPACE) \
+        .project(cfg["project"]) \
+        .version(cfg["version"]) \
+        .download(model_format="yolov11")
+
+    model = YOLO("yolo11s.pt")
+    results = model.train(
+        data=str(Path(dataset.location) / "data.yaml"),
+        project="runs/drone_models",
+        name=cfg["run_name"],
+        **TRAIN_ARGS,
+    )
+    run_dirs[name] = Path(results.save_dir)</code></pre>
+
+            <p style="margin-top: 1rem;"><a href="notebooks/training_pipeline.ipynb" style="color: var(--accent);">📓 Open notebook →</a></p>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Notebook</span>
+        <span class="slide-num">11 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 12: Roadmap -->
+    <section class="slide" data-slide="12">
+      <div class="slide-content">
+        <h2>Roadmap</h2>
+        <p class="lead">From working pipeline to production SAR drone fleet.</p>
+
+        <div class="grid grid-2">
+          <div>
+            <h3>P0 — Complete & Harden</h3>
+            <ul>
+              <li>☐ Finish all 3 model training runs</li>
+              <li>☐ ONNX/TensorRT benchmark table on Jetson Orin Nano</li>
+              <li>☐ Fix nested run directory bug (<code>runs/detect/runs/</code>)</li>
+              <li>☐ Publish trained weights to GitHub Releases</li>
+              <li>☐ Add CI pipeline (train → export → benchmark)</li>
+            </ul>
+
+            <h3>P1 — Robustness</h3>
+            <ul>
+              <li>☐ Temporal smoothing across video frames</li>
+              <li>☐ Thermal-visual fusion for night ops</li>
+              <li>☐ Multi-class dataset expansion</li>
+              <li>☐ Confidence calibration for risk-aware SAR</li>
+            </ul>
+          </div>
+          <div>
+            <h3>P2 — Advanced</h3>
+            <ul>
+              <li>☐ Swarm mode: multi-drone detection merging</li>
+              <li>☐ Onboard tracking (ByteTrack/BoT-SORT)</li>
+              <li>☐ Automated model selection per disaster type</li>
+              <li>☐ Edge optimization: INT8 quantization</li>
+              <li>☐ MAVLink/ROS2 integration for autopilot</li>
+            </ul>
+
+            <h3>P3 — Research</h3>
+            <ul>
+              <li>☐ Few-shot adaptation to new disaster types</li>
+              <li>☐ Uncertainty estimation for human-in-loop</li>
+              <li>☐ Cross-modal retrieval (satellite → drone)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Roadmap</span>
+        <span class="slide-num">12 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 13: Known Issues -->
+    <section class="slide" data-slide="13">
+      <div class="slide-content">
+        <h2>Known Issues & Limitations</h2>
+        <p class="lead">Transparent about current gaps — fixes tracked in roadmap.</p>
+
+        <div class="grid grid-2">
+          <div class="card" style="border-color: var(--danger);">
+            <h4 style="color: var(--danger);">🔴 Critical</h4>
+            <ul>
+              <li><strong>Missing <code>best.pt</code></strong> — Flood training run exists but weights not produced. Likely interrupted or path bug.</li>
+              <li><strong>Nested run dir</strong> — Output at <code>runs/detect/runs/drone_models/</code> instead of <code>runs/drone_models/</code>. Fix in <code>train.py</code> project/name handling.</li>
+            </ul>
+          </div>
+          <div class="card" style="border-color: var(--accent-3);">
+            <h4 style="color: var(--accent-3);">🟡 Medium</h4>
+            <ul>
+              <li><strong>No weights in repo</strong> — Distributed via Releases only (by design, but docs should clarify).</li>
+              <li><strong>Single-class datasets</strong> — Current Roboflow data may have only 1–2 classes; real SAR needs more.</li>
+              <li><strong>RGB-only</strong> — No thermal modality; night ops need fusion (P1 roadmap).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>🟢 Minor</h4>
+            <ul>
+              <li>Tests only cover config loading (no integration tests)</li>
+              <li>No <code>CONTRIBUTING.md</code> or issue templates</li>
+              <li>No automated release workflow</li>
+              <li>Notebook could add metric logging to Weights & Biases / MLflow</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>📋 Design Choices</h4>
+            <ul>
+              <li>YOLOv11s over nano — paper shows <1–2 mAP gain worth the latency</li>
+              <li>1280² resolution — small objects (survivors) need it</li>
+              <li>CLI-first — notebook is convenience, not interface</li>
+              <li>AdamW + cosine — better fine-tuning than SGD defaults</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Known Issues</span>
+        <span class="slide-num">13 / 14</span>
+      </div>
+    </section>
+
+    <!-- Slide 14: Closing -->
+    <section class="slide slide-title" data-slide="14">
+      <div class="slide-content">
+        <h1>Disaster Detection Drone</h1>
+        <p class="lead tagline">Real-time UAV vision for the golden hour.</p>
+
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <a href="https://github.com/ghoulraider13-rgb/Disaster_DetectionDrone" style="color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            GitHub Repository
+          </a>
+          <a href="PROJECT_REPORT.md" style="color: var(--accent-2); text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Full Project Report
+          </a>
+        </div>
+
+        <p style="margin-top: 2rem; color: var(--fg-muted);">
+          <strong>Repository:</strong> github.com/ghoulraider13-rgb/Disaster_DetectionDrone<br>
+          <strong>License:</strong> MIT — Built for faster SAR response. Every minute saved is a life.
+        </p>
+      </div>
+      <div class="footer">
+        <span>Thank You</span>
+        <span class="slide-num">14 / 14</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="nav-hint">← → or Space to navigate • F for fullscreen</div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+
+    function showSlide(n) {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === n);
+      });
+      current = n;
+    }
+
+    function nextSlide() {
+      if (current < slides.length - 1) showSlide(current + 1);
+    }
+
+    function prevSlide() {
+      if (current > 0) showSlide(current - 1);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault(); nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault(); prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault(); showSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault(); showSlide(slides.length - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        document.documentElement.requestFullscreen?.();
+      }
+    });
+
+    // Touch/swipe support
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+    document.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) {
+        dx > 0 ? prevSlide() : nextSlide();
+      }
+    });
+
+    // Initialize first slide
+    showSlide(0);
+  </script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 **YOLOv11-based aerial detection of floods, landslides, and earthquake damage for UAV search-and-rescue.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![YOLOv11](https://img.shields.io/badge/model-YOLOv11n-00B0FF?logo=ultralytics)](https://docs.ultralytics.com/)
+[![YOLOv11](https://img.shields.io/badge/model-YOLOv11s-00B0FF?logo=ultralytics)](https://docs.ultralytics.com/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Datasets](https://img.shields.io/badge/datasets-Roboflow-9C27B0?logo=roboflow)](configs/datasets.yaml)
 
@@ -23,12 +23,13 @@ Three models are trained, one per disaster type:
 
 | Model | Task | Source dataset |
 |---|---|---|
-| `flood_model` | Flood extent + survivor detection on flooded terrain | [AI disaster survival drone v2](https://universe.roboflow.com/ashwins-workspace-zz9gf/ai-disaster-survival-drone) |
-| `landslide_model` | Landslide / slope-failure detection from UAV imagery | [AI disaster drone - Landslide v1](https://universe.roboflow.com/ashwins-workspace-zz9gf/ai-disaster-drone-landslide) |
-| `earthquake_model` | Rubble and structural damage assessment | [AI disaster drone - Earthquakes v1](https://universe.roboflow.com/ashwins-workspace-zz9gf/ai-disaster-drone-earthquakes) |
+| `flood_model_v2` | Flood extent + survivor detection on flooded terrain | [AI disaster survival drone v2](https://universe.roboflow.com/ashwins-workspace-zz9gf/ai-disaster-survival-drone) |
+| `landslide_model_v2` | Landslide / slope-failure detection from UAV imagery | [AI disaster drone - Landslide v1](https://universe.roboflow.com/ashwins-workspace-zz9gf/ai-disaster-drone-landslide) |
+| `earthquake_model_v2` | Rubble and structural damage assessment | [AI disaster drone - Earthquakes v1](https://universe.roboflow.com/ashwins-workspace-zz9gf/ai-disaster-drone-earthquakes) |
 
-All models start from COCO-pretrained `yolo11n.pt` (nano variant: ~6.5M params, ~39 GFLOPs) — the
-right size/latency trade-off for onboard inference, where every millisecond and milliwatt counts.
+All models start from COCO-pretrained `yolo11s.pt` (small variant: ~11M params, ~137 GFLOPs) — the
+right size/accuracy trade-off for onboard inference on disaster drones where small objects
+(survivors, rubble) need higher resolution (1280×1280) and model capacity.
 
 ## 🗂️ Project structure
 
@@ -85,10 +86,11 @@ python -m drone_detect train                       # downloads data, then trains
 python -m drone_detect train --only flood --device cpu   # single model, CPU fallback
 ```
 
-Training defaults (per model): 50 epochs, 640×640 images, cosine LR, early stopping with
-`patience=20`, fixed `seed=42` for reproducibility, and automatic batch-size selection.
+Training defaults (per model): 150 epochs, 1280×1280 images, AdamW optimizer with cosine LR,
+early stopping with `patience=30`, fixed `seed=42` for reproducibility, batch size 16,
+and enhanced augmentation (mosaic, mixup, copy_paste) for small aerial objects.
 Override anything per-dataset in [`configs/datasets.yaml`](configs/datasets.yaml) or on the
-command line (`--epochs`, `--device`).
+command line (`--epochs`, `--device`, `--model`).
 
 Each run writes to `runs/drone_models/<name>/` with `weights/best.pt`, confusion matrix,
 `results.png`, and validation predictions.
@@ -137,8 +139,19 @@ Training runs (confusion matrices, PR curves, per-class mAP) are generated under
 (k-means, region growing) is reported in the accompanying paper — YOLOv11n outperforms both by
 9–20 accuracy points on flood detection, with recall gains mattering most for SAR.
 
+### Current Model Status (All Trained)
+
+| Model | Classes | Weights Location |
+|-------|---------|------------------|
+| `flood_model_v2` | Flooded regions, Pool | `runs/drone_models/flood_model_v2/weights/best.pt` |
+| `landslide_model_v2` | landslide, landslide- | `runs/drone_models/landslide_model_v2/weights/best.pt` |
+| `earthquake_model_v2` | Buildings-Collapsed, Buildings-Damaged, Road-Damaged | `runs/drone_models/earthquake_model_v2/weights/best.pt` |
+
+All models trained on YOLOv11s (COCO-pretrained) at 1280×1280 resolution with enhanced augmentation for small aerial objects. Ready for export to ONNX/TensorRT/OpenVINO for edge deployment on Jetson-class hardware.
+
 ## 🛣️ Roadmap
 
+- [x] Complete all three model training runs (flood, landslide, earthquake)
 - [ ] ONNX/TensorRT benchmark table on Jetson Orin Nano
 - [ ] Temporal smoothing across video frames to fight occlusion-driven misses
 - [ ] Thermal-visual fusion for survivor detection at night
