@@ -1,0 +1,754 @@
+<h1 id="disaster-detection-drone-project-report">Disaster Detection
+Drone — Project Report</h1>
+<p><strong>Version:</strong> 1.0.0<br />
+<strong>Date:</strong> October 2026<br />
+<strong>Repository:</strong>
+https://github.com/ghoulraider13-rgb/Disaster_DetectionDrone<br />
+<strong>License:</strong> MIT</p>
+<hr />
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>The <strong>Disaster Detection Drone</strong> project delivers a
+production-ready pipeline for training and deploying compact YOLOv11
+models that detect floods, landslides, and earthquake damage from UAV
+imagery. Designed for real-time onboard inference on Jetson-class
+companion computers, the system enables drones to survey disaster zones
+autonomously during the critical “golden hour” when human operators
+cannot reach the area.</p>
+<h3 id="key-achievements">Key Achievements</h3>
+<ul>
+<li><strong>Three specialized models</strong> trained on pinned Roboflow
+datasets (flood, landslide, earthquake)</li>
+<li><strong>CLI-first architecture</strong> (<code>drone_detect</code>)
+for scripted CI/CD and fleet training</li>
+<li><strong>Reproducible training</strong> with fixed seeds, early
+stopping, and version-pinned datasets</li>
+<li><strong>Edge-ready exports</strong> to ONNX, TensorRT, OpenVINO, and
+TorchScript</li>
+<li><strong>Kaggle/Colab notebook</strong> for experimentation and
+visualization</li>
+</ul>
+<hr />
+<h2 id="problem-statement">2. Problem Statement</h2>
+<p>During disaster response, the first hours — the <em>golden hour</em>
+— determine survival outcomes. Ground teams are often blocked by
+floodwater, debris, or unstable terrain. Drones equipped with onboard
+computer vision can: - Survey dangerous/inaccessible terrain faster than
+ground teams - Detect survivors, flood extent, landslide zones, and
+structural damage - Operate without streaming video to a human operator
+(bandwidth-limited in disasters)</p>
+<p><strong>Constraint:</strong> Detection must run in real-time on drone
+companion computers (Jetson Orin Nano / Xavier NX), ruling out large
+models or cloud inference.</p>
+<hr />
+<h2 id="solution-architecture">3. Solution Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     Disaster Detection Drone                     │
+├─────────────────────────────────────────────────────────────────┤
+│  configs/datasets.yaml  ──►  drone_detect/datasets.py           │
+│       │                         │                               │
+│       ▼                         ▼                               │
+│  Pinned Roboflow Datasets ──►  Download &amp; Resolve data.yaml     │
+│                                                          │       │
+│  drone_detect/train.py ◄────────────────────────────────┘       │
+│       │                                                         │
+│       ▼                                                         │
+│  YOLOv11s.pt (COCO-pretrained) ──► Fine-tune per disaster      │
+│       │                                                         │
+│       ▼                                                         │
+│  runs/drone_models/&lt;model&gt;/weights/best.pt                     │
+│       │                                                         │
+│       ▼                                                         │
+│  drone_detect/export.py ──► ONNX / TensorRT / OpenVINO          │
+│       │                                                         │
+│       ▼                                                         │
+│  drone_detect/inference.py ──► Real-time onboard detection      │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="technology-stack">Technology Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deep Learning Framework</td>
+<td>Ultralytics YOLO</td>
+<td>≥8.3.0</td>
+</tr>
+<tr>
+<td>Dataset Hosting</td>
+<td>Roboflow</td>
+<td>≥1.1.0</td>
+</tr>
+<tr>
+<td>Configuration</td>
+<td>PyYAML</td>
+<td>≥6.0</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>Python</td>
+<td>≥3.10</td>
+</tr>
+<tr>
+<td>Export Targets</td>
+<td>ONNX, TensorRT, OpenVINO, TorchScript</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dataset-specifications">4. Dataset Specifications</h2>
+<p>All datasets are <strong>pinned to exact versions</strong> on
+Roboflow for reproducibility. Bump versions in
+<code>configs/datasets.yaml</code> when new data is published.</p>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 32%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>Model</th>
+<th>Roboflow Project</th>
+<th>Version</th>
+<th>Classes</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>flood_model_v2</strong></td>
+<td><code>ai-disaster-survival-drone</code></td>
+<td>2</td>
+<td>flood, survivor</td>
+<td>Hurricane Harvey aerial imagery — flood extent + survivor
+detection</td>
+</tr>
+<tr>
+<td><strong>landslide_model_v2</strong></td>
+<td><code>ai-disaster-drone-landslide</code></td>
+<td>1</td>
+<td>landslide</td>
+<td>UAV imagery of slope failures and debris flows</td>
+</tr>
+<tr>
+<td><strong>earthquake_model_v2</strong></td>
+<td><code>ai-disaster-drone-earthquakes</code></td>
+<td>1</td>
+<td>rubble, damage</td>
+<td>Post-earthquake rubble and structural damage assessment</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Workspace:</strong>
+<code>ashwins-workspace-zz9gf</code><br />
+<strong>Format:</strong> YOLOv11 (auto-converted by Roboflow SDK)<br />
+<strong>Resolution:</strong> 1280×1280 (critical for small aerial
+objects: survivors, rubble fragments)</p>
+<hr />
+<h2 id="training-configuration">5. Training Configuration</h2>
+<h3 id="base-model">Base Model</h3>
+<ul>
+<li><strong>YOLOv11s.pt</strong> — Small variant (~11M parameters, ~137
+GFLOPs)</li>
+<li>COCO-pretrained, chosen over nano for better capacity on small
+objects</li>
+<li>Accuracy within ~1–2 mAP of larger variants at fraction of latency
+(per accompanying paper)</li>
+</ul>
+<h3
+id="hyperparameters-per-dataset-overridden-in-configsdatasets.yaml">Hyperparameters
+(per dataset, overridden in <code>configs/datasets.yaml</code>)</h3>
+<table>
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 24%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epochs</td>
+<td>150</td>
+<td>Upper bound; early stopping activates earlier</td>
+</tr>
+<tr>
+<td>Image Size</td>
+<td>1280</td>
+<td>Small aerial objects need high resolution</td>
+</tr>
+<tr>
+<td>Batch Size</td>
+<td>16</td>
+<td>Fits Jetson-class GPU memory</td>
+</tr>
+<tr>
+<td>Patience</td>
+<td>30</td>
+<td>Stops when val mAP plateaus</td>
+</tr>
+<tr>
+<td>Optimizer</td>
+<td>AdamW</td>
+<td>Better convergence than SGD for fine-tuning</td>
+</tr>
+<tr>
+<td>Learning Rate</td>
+<td>0.001</td>
+<td>Standard for AdamW fine-tuning</td>
+</tr>
+<tr>
+<td>LR Schedule</td>
+<td>Cosine</td>
+<td>Smooth decay to zero</td>
+</tr>
+<tr>
+<td>Seed</td>
+<td>42</td>
+<td>Full reproducibility</td>
+</tr>
+<tr>
+<td>Class Weight (cls)</td>
+<td>2.0</td>
+<td>Disaster classes are imbalanced (few survivors)</td>
+</tr>
+<tr>
+<td>Box Loss Weight</td>
+<td>7.5</td>
+<td>Precise localization critical for SAR</td>
+</tr>
+<tr>
+<td>DFL Loss Weight</td>
+<td>1.5</td>
+<td>Distribution focal loss for better boxes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="augmentation-tuned-for-small-aerial-objects">Augmentation (tuned
+for small aerial objects)</h3>
+<table>
+<thead>
+<tr>
+<th>Augmentation</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mosaic</td>
+<td>1.0</td>
+<td>Context mixing for small objects</td>
+</tr>
+<tr>
+<td>MixUp</td>
+<td>0.2</td>
+<td>Regularization</td>
+</tr>
+<tr>
+<td>Copy-Paste</td>
+<td>0.3</td>
+<td>Oversample small objects (survivors)</td>
+</tr>
+<tr>
+<td>Degrees</td>
+<td>10.0</td>
+<td>Rotation invariance</td>
+</tr>
+<tr>
+<td>Translate</td>
+<td>0.2</td>
+<td>Position variance</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>0.8</td>
+<td>Zoom variance</td>
+</tr>
+<tr>
+<td>FlipLR</td>
+<td>0.5</td>
+<td>Horizontal symmetry</td>
+</tr>
+<tr>
+<td>HSV (H/S/V)</td>
+<td>0.015/0.7/0.4</td>
+<td>Lighting variance</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="project-structure">6. Project Structure</h2>
+<pre><code>Disaster_DetectionDrone/
+├── configs/
+│   └── datasets.yaml           # Pinned Roboflow versions + per-model hyperparams
+├── drone_detect/
+│   ├── __init__.py             # Package metadata (__version__ = &quot;1.0.0&quot;)
+│   ├── __main__.py             # Entry point: python -m drone_detect
+│   ├── cli.py                  # CLI: datasets / train / export / predict
+│   ├── datasets.py             # Roboflow download + config loader
+│   ├── train.py                # Fine-tuning loop with reproducible defaults
+│   ├── export.py               # ONNX / TensorRT / OpenVINO export
+│   └── inference.py            # Prediction helpers → structured detections
+├── notebooks/
+│   └── training_pipeline.ipynb # Kaggle/Colab end-to-end walkthrough
+├── weights/                    # Trained weights (download from Releases)
+├── tests/
+│   └── test_config.py          # Config/schema unit tests (no heavy deps)
+├── requirements.txt
+├── .env.example                # Template for ROBOFLOW_API_KEY
+└── README.md</code></pre>
+<hr />
+<h2 id="cli-usage-reference">7. CLI Usage Reference</h2>
+<h3 id="install">Install</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/ghoulraider13-rgb/Disaster_DetectionDrone.git</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> Disaster_DetectionDrone</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv .venv</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env   <span class="co"># Add ROBOFLOW_API_KEY</span></span></code></pre></div>
+<h3 id="dataset-management">Dataset Management</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># List all configured datasets</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect datasets list</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Download all (or one) datasets</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect datasets download</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect datasets download <span class="at">--only</span> flood</span></code></pre></div>
+<h3 id="training">Training</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train all three models (downloads data if needed)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect train</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Train single model with overrides</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect train <span class="at">--only</span> landslide <span class="at">--epochs</span> 100 <span class="at">--device</span> cpu</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect train <span class="at">--only</span> earthquake <span class="at">--model</span> yolo11n.pt</span></code></pre></div>
+<h3 id="export-for-edge-deployment">Export for Edge Deployment</h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ONNX (general edge)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect export <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--weights</span> runs/drone_models/flood_model_v2/weights/best.pt <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--format</span> onnx</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># TensorRT (Jetson Orin Nano/NX)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect export <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--weights</span> runs/drone_models/flood_model_v2/weights/best.pt <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--format</span> engine</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># OpenVINO (Intel NUC/VPU)</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect export <span class="at">--format</span> openvino</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># TorchScript (Python-only deployment)</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect export <span class="at">--format</span> torchscript</span></code></pre></div>
+<h3 id="inference">Inference</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Image</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect predict <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--weights</span> runs/drone_models/flood_model_v2/weights/best.pt <span class="dt">\</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--source</span> mission_footage.jpg <span class="at">--conf</span> 0.25</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Video (saves annotated output to runs/)</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect predict <span class="dt">\</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--weights</span> runs/drone_models/flood_model_v2/weights/best.pt <span class="dt">\</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--source</span> mission_footage.mp4 <span class="at">--conf</span> 0.25</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Webcam / RTSP stream</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect predict <span class="at">--weights</span> best.pt <span class="at">--source</span> 0</span></code></pre></div>
+<hr />
+<h2 id="current-training-status">8. Current Training Status</h2>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 17%" />
+<col style="width: 19%" />
+<col style="width: 29%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th>Model</th>
+<th>Status</th>
+<th>Run Dir</th>
+<th>Best Weights</th>
+<th>Classes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>flood_model_v2</strong></td>
+<td>✅ Trained</td>
+<td><code>runs/drone_models/flood_model_v2/</code></td>
+<td>✅ <code>weights/best.pt</code></td>
+<td>Flooded regions, Pool</td>
+</tr>
+<tr>
+<td><strong>landslide_model_v2</strong></td>
+<td>✅ Trained</td>
+<td><code>runs/drone_models/landslide_model_v2/</code></td>
+<td>✅ <code>weights/best.pt</code></td>
+<td>landslide, landslide-</td>
+</tr>
+<tr>
+<td><strong>earthquake_model_v2</strong></td>
+<td>✅ Trained</td>
+<td><code>runs/drone_models/earthquake_model_v2/</code></td>
+<td>✅ <code>weights/best.pt</code></td>
+<td>Buildings-Collapsed, Buildings-Damaged, Road-Damaged</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>All three models are now trained.</strong> Weights are
+available at <code>runs/drone_models/*/weights/best.pt</code> and
+<code>runs/drone_models/*/weights/last.pt</code>. Ready for export to
+ONNX/TensorRT/OpenVINO for edge deployment.</p>
+</blockquote>
+<h3 id="training-configuration-from-args.yaml">Training Configuration
+(from <code>args.yaml</code>)</h3>
+<ul>
+<li>Base: <code>yolo11s.pt</code></li>
+<li>Epochs: 150 (early stopping at patience=30)</li>
+<li>Image Size: 1280×1280</li>
+<li>Batch: 16</li>
+<li>Optimizer: AdamW</li>
+<li>Learning Rate: 0.001 (cosine decay)</li>
+<li>Seed: 42 (deterministic)</li>
+<li>Device: CUDA:0 (GPU)</li>
+</ul>
+<p>All models trained with enhanced augmentation for small aerial
+objects: mosaic=1.0, mixup=0.2, copy_paste=0.3, degrees=10.0.</p>
+<hr />
+<h2 id="reproducibility-guarantees">9. Reproducibility Guarantees</h2>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 59%" />
+</colgroup>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pinned Datasets</strong></td>
+<td>Exact Roboflow version in <code>configs/datasets.yaml</code></td>
+</tr>
+<tr>
+<td><strong>Fixed Seed</strong></td>
+<td><code>seed=42</code> + <code>deterministic=True</code> in
+training</td>
+</tr>
+<tr>
+<td><strong>Early Stopping</strong></td>
+<td><code>patience=30</code> on validation mAP (not fixed epochs)</td>
+</tr>
+<tr>
+<td><strong>Config-Driven</strong></td>
+<td>All hyperparameters in YAML, not hardcoded</td>
+</tr>
+<tr>
+<td><strong>Environment Isolation</strong></td>
+<td><code>requirements.txt</code> + <code>.env</code> for secrets</td>
+</tr>
+<tr>
+<td><strong>CLI-First</strong></td>
+<td>Notebook is convenience; CLI is the contract</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="export-deployment">10. Export &amp; Deployment</h2>
+<h3 id="export-formats-comparison">Export Formats Comparison</h3>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 41%" />
+<col style="width: 21%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr>
+<th>Format</th>
+<th>Target Hardware</th>
+<th>Latency</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ONNX</strong></td>
+<td>Generic (ONNX Runtime)</td>
+<td>Medium</td>
+<td>Universal, good starting point</td>
+</tr>
+<tr>
+<td><strong>TensorRT (engine)</strong></td>
+<td>NVIDIA Jetson Orin/Nano</td>
+<td><strong>Lowest</strong></td>
+<td>Requires build on target device</td>
+</tr>
+<tr>
+<td><strong>OpenVINO</strong></td>
+<td>Intel CPU/VPU/NPU</td>
+<td>Low</td>
+<td>Optimized for Intel hardware</td>
+</tr>
+<tr>
+<td><strong>TorchScript</strong></td>
+<td>Python-only environments</td>
+<td>High</td>
+<td>No C++ runtime needed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recommended-deployment-flow">Recommended Deployment Flow</h3>
+<ol type="1">
+<li>Train on GPU workstation/cloud → <code>best.pt</code></li>
+<li>Export to ONNX (validation) → <code>best.onnx</code></li>
+<li>On Jetson: Convert ONNX → TensorRT engine via <code>trtexec</code>
+or <code>drone_detect export --format engine</code></li>
+<li>Deploy engine + <code>drone_detect.inference.predict()</code> on
+drone companion computer</li>
+<li>Benchmark: Target ≥30 FPS at 1280×1280 on Jetson Orin Nano</li>
+</ol>
+<hr />
+<h2 id="results-validation">11. Results &amp; Validation</h2>
+<h3 id="expected-metrics-from-accompanying-paper">Expected Metrics (from
+accompanying paper)</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Flood</th>
+<th>Landslide</th>
+<th>Earthquake</th>
+<th>Classical Seg.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mAP@0.5</td>
+<td>~0.75</td>
+<td>~0.70</td>
+<td>~0.68</td>
+<td>0.55–0.60</td>
+</tr>
+<tr>
+<td>Recall (Survivors)</td>
+<td><strong>&gt;0.80</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>~0.60</td>
+</tr>
+<tr>
+<td>Inference (Jetson Orin Nano)</td>
+<td>~25 ms</td>
+<td>~25 ms</td>
+<td>~25 ms</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Key insight:</strong> YOLOv11n/s outperforms classical
+segmentation (k-means, region growing) by <strong>9–20 accuracy
+points</strong> on flood detection. Recall gains matter most for
+Search-and-Rescue (missing a survivor is unacceptable).</p>
+</blockquote>
+<h3 id="validation-artifacts-generated-per-run">Validation Artifacts
+(generated per run)</h3>
+<ul>
+<li><code>confusion_matrix.png</code> — per-class confusion matrix</li>
+<li><code>results.png</code> — training curves (loss, mAP, precision,
+recall)</li>
+<li><code>val_batch0_pred.jpg</code> — validation predictions
+overlay</li>
+<li><code>weights/best.pt</code> — best checkpoint by val mAP</li>
+<li><code>weights/last.pt</code> — final epoch checkpoint</li>
+</ul>
+<h3 id="actual-trained-model-classes">Actual Trained Model Classes</h3>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 72%" />
+</colgroup>
+<thead>
+<tr>
+<th>Model</th>
+<th>Classes Detected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>flood_model_v2</strong></td>
+<td>Flooded regions, Pool</td>
+</tr>
+<tr>
+<td><strong>landslide_model_v2</strong></td>
+<td>landslide, landslide-</td>
+</tr>
+<tr>
+<td><strong>earthquake_model_v2</strong></td>
+<td>Buildings-Collapsed, Buildings-Damaged, Road-Damaged</td>
+</tr>
+</tbody>
+</table>
+<p>All three models trained to completion with weights available for
+edge deployment.</p>
+<hr />
+<h2 id="roadmap">12. Roadmap</h2>
+<table>
+<colgroup>
+<col style="width: 41%" />
+<col style="width: 25%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Item</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P0</strong></td>
+<td>Complete all three model training runs</td>
+<td>✅ Done</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>ONNX/TensorRT benchmark table on Jetson Orin Nano</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Temporal smoothing across video frames (reduce occlusion
+misses)</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Thermal-visual fusion for night survivor detection</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Swarm mode: multi-drone detection merging</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Automated CI pipeline (train → export → benchmark)</td>
+<td>📋 Planned</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="known-issues-limitations">13. Known Issues &amp;
+Limitations</h2>
+<ol type="1">
+<li><strong>Nested run directory</strong> — Output written to
+<code>runs/detect/runs/drone_models/</code> instead of
+<code>runs/drone_models/</code>. Fix in <code>train.py</code>
+project/name handling (weights have been manually copied to correct
+location).</li>
+<li><strong>No test weights in repo</strong> — Weights distributed via
+GitHub Releases (not committed).</li>
+<li><strong>Single-class datasets</strong> — Current Roboflow datasets
+may have only 1–2 classes; multi-class SAR needs expansion.</li>
+<li><strong>No thermal modality</strong> — All models RGB-only; night
+ops require thermal fusion (roadmap).</li>
+<li><strong>Class labeling consistency</strong> — Some dataset classes
+use hyphens (e.g., “landslide-”); review for consistency in
+production.</li>
+</ol>
+<hr />
+<h2 id="contributing">14. Contributing</h2>
+<ul>
+<li><strong>Issues/PRs welcome</strong> — See
+<code>CONTRIBUTING.md</code> (to be created)</li>
+<li><strong>Dataset changes:</strong> Bump version in
+<code>configs/datasets.yaml</code>, note delta in PR</li>
+<li><strong>Code style:</strong> Ruff + type hints (PEP 484)</li>
+<li><strong>Tests:</strong> <code>pytest tests/</code> (fast, no GPU
+required)</li>
+</ul>
+<hr />
+<h2 id="license-attribution">15. License &amp; Attribution</h2>
+<ul>
+<li><strong>Code:</strong> MIT License — see <code>LICENSE</code></li>
+<li><strong>Trained Weights:</strong> Released under MIT, subject to
+source datasets’ terms on Roboflow Universe</li>
+<li><strong>Datasets:</strong> Hosted on Roboflow; check each project
+page for usage terms</li>
+</ul>
+<hr />
+<h2 id="appendix-a-environment-variables">Appendix A: Environment
+Variables</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ROBOFLOW_API_KEY</code></td>
+<td>Yes</td>
+<td>Roboflow API key (free tier works)</td>
+</tr>
+<tr>
+<td><code>CUDA_VISIBLE_DEVICES</code></td>
+<td>No</td>
+<td>GPU selection (default: 0)</td>
+</tr>
+<tr>
+<td><code>PYTHONPATH</code></td>
+<td>No</td>
+<td>Add repo root for <code>drone_detect</code> imports</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix-b-quick-reference-card">Appendix B: Quick Reference
+Card</h2>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Setup</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone ... <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> Disaster_DetectionDrone</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv .venv <span class="kw">&amp;&amp;</span> <span class="bu">source</span> .venv/bin/activate</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">ROBOFLOW_API_KEY</span><span class="op">=</span>your_key</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Inspect datasets</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect datasets list</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Train all models</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect train</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Export for Jetson</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect export <span class="at">--weights</span> runs/drone_models/flood_model_v2/weights/best.pt <span class="at">--format</span> engine</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Run on drone footage</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> drone_detect predict <span class="at">--weights</span> best.engine <span class="at">--source</span> video.mp4 <span class="at">--conf</span> 0.25</span></code></pre></div>
+<hr />
+<p><em>Report generated from repository state as of commit
+<code>277436b</code> (Initial release).</em></p>
